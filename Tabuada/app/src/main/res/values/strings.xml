@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Tabuada</string>
+    <string name="txtResultado">Resultado</string>
+    <string name="txtXis">X</string>
+</resources>
