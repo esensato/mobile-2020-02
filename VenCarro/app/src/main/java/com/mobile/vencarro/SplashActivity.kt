@@ -15,7 +15,7 @@ class SplashActivity : AppCompatActivity() {
         // !! impedede que a instrução seja executada caso supportActionBar == null
         // correspondente a:
         // if (supportActionBar != null) { supportActionBar.hide() }
-        supportActionBar!!.hide()
+        supportActionBar?.hide()
         // coloca a activity em modo tela cheia
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                         WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -29,6 +29,7 @@ class SplashActivity : AppCompatActivity() {
     }
 
     fun iniciar() {
+
         // cria um remetente / destinatario usando Intent
         val iniciar = Intent(this, PrincipalActivity::class.java)
         // aciona a activity PrincipalActivity...

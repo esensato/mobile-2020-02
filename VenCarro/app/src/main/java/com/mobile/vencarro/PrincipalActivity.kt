@@ -8,5 +8,11 @@ class PrincipalActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_principal)
+
+        supportFragmentManager.
+        beginTransaction().
+        add(R.id.flPrincipal, CadastroFragment()).
+        commit()
+
     }
 }
