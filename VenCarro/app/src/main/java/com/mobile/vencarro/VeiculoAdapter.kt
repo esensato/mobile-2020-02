@@ -3,6 +3,7 @@ package com.mobile.vencarro
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
@@ -16,7 +17,12 @@ import org.json.JSONArray
 class VeiculoAdapter (contexto:Context) : RecyclerView.Adapter<VeiculoHolder>(){
 
     // URL para as marcas dos veiculos
-    val URL_MARCA = "http://fipeapi.appspot.com/api/1/carros/marcas.json"
+    val URL_MARCA = "https://fipeapi.appspot.com/api/1/carros/marcas.json"
+
+    // URL para os modelos dos veiculos de uma marca (passar o id da marca)
+    // por exemplo, FIAT é marca id 21 então a URL fica:
+    // https://fipeapi.appspot.com/api/1/carros/veiculos/21.json
+    val URL_MODELO = "https://fipeapi.appspot.com/api/1/carros/veiculos/"
 
     // lista que contera os dados dos veiculos
     var listaVeiculos = ArrayList<Veiculo>()
@@ -49,6 +55,15 @@ class VeiculoAdapter (contexto:Context) : RecyclerView.Adapter<VeiculoHolder>(){
         holder.txtMarca.text = listaVeiculos.get(position).marca
         holder.txtModelo.text = listaVeiculos.get(position).modelo
         holder.txtAno.text = listaVeiculos.get(position).ano
+
+        // associa um evento de click sobre cada uma das linhas da lista
+        holder.linha.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) {
+                Log.i("VENCARRO", "Selecionado: ${listaVeiculos.get(position).idMarca}")
+                // efetuar uma nova requisição passando o id da marca para obter os modelos de veiculo
+                obterModelos()
+            }
+        })
     }
 
     // obtem as marcas de veiculos
@@ -57,12 +72,13 @@ class VeiculoAdapter (contexto:Context) : RecyclerView.Adapter<VeiculoHolder>(){
         var req = JsonArrayRequest(Request.Method.GET, URL_MARCA, null,
             Response.Listener<JSONArray> { response ->
 
+                Log.i("RESULTADO", response.toString())
                 // [{"name": "AUDI", "fipe_name": "Audi", "order": 2, "key": "audi-6", "id": 6}, ...]
                 for (i in 0 until response.length()) {
                 val obj = response.getJSONObject(i)
                 listaVeiculos.add(Veiculo(obj.getString("id"),
                     obj.getString("name"),
-                    "", "", "", "", ""))
+                    "-", "-", "-", "-", ""))
                 }
                 // avisa que a lista de veiculos foi atualizada e portando o RecyclerView deve ser redesenhado
                 notifyDataSetChanged()

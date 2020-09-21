@@ -1,6 +1,7 @@
 package com.mobile.vencarro
 
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.linha_lista_veiculo.view.*
@@ -13,5 +14,6 @@ class VeiculoHolder (item:View) : RecyclerView.ViewHolder(item){
     var txtMarca:TextView = item.txtMarca
     var txtModelo:TextView = item.txtModelo
     var txtAno:TextView = item.txtAno
-
+    // referenciar o proprio linear layout (linha inteira) para associar evento de click
+    var linha:LinearLayout = item.linhaItem
 }
