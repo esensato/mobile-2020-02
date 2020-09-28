@@ -10,11 +10,25 @@ import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.JsonArrayRequest
+import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import org.json.JSONArray
+import org.json.JSONObject
 
 // cria o adapter baseado no holder
-class VeiculoAdapter (contexto:Context) : RecyclerView.Adapter<VeiculoHolder>(){
+class VeiculoAdapter (contexto_:Context) : RecyclerView.Adapter<VeiculoHolder>(){
+
+    // armazena o contexto que acionou o Adapter (PrincipalActivity)
+    var contexto = contexto_
+    // armazenara os valores selecionados (marca, modelo e ano)
+    var idMarca:String = ""
+    var marca:String = ""
+    var idModelo:String = ""
+    var modelo:String = ""
+    var idAno:String = ""
+    var ano:String = ""
+    // indica aqual o tipo de requisição efetuar: MODELO, ANO e PRECO
+    var tipoRequisicao:String = "MODELO"
 
     // URL para as marcas dos veiculos
     val URL_MARCA = "https://fipeapi.appspot.com/api/1/carros/marcas.json"
@@ -23,6 +37,12 @@ class VeiculoAdapter (contexto:Context) : RecyclerView.Adapter<VeiculoHolder>(){
     // por exemplo, FIAT é marca id 21 então a URL fica:
     // https://fipeapi.appspot.com/api/1/carros/veiculos/21.json
     val URL_MODELO = "https://fipeapi.appspot.com/api/1/carros/veiculos/"
+
+    // URL para obter o ano / combustivel dos veiculos dentro do modelo selecionado
+    val URL_ANO = "https://fipeapi.appspot.com/api/1/carros/veiculo/"
+
+    // obtem o preco de um modelo de veiculo informando seu ano e combistivel
+    val URL_PRECO = "https://fipeapi.appspot.com/api/1/carros/veiculo/"
 
     // lista que contera os dados dos veiculos
     var listaVeiculos = ArrayList<Veiculo>()
@@ -60,8 +80,24 @@ class VeiculoAdapter (contexto:Context) : RecyclerView.Adapter<VeiculoHolder>(){
         holder.linha.setOnClickListener(object : View.OnClickListener {
             override fun onClick(v: View?) {
                 Log.i("VENCARRO", "Selecionado: ${listaVeiculos.get(position).idMarca}")
+                // armazena o id da marca selecionada na variavel de escopo global idMarca
+                idMarca = listaVeiculos.get(position).idMarca
+                marca = listaVeiculos.get(position).marca
+                idModelo = listaVeiculos.get(position).idModelo
+                modelo = listaVeiculos.get(position).modelo
+                idAno = listaVeiculos.get(position).idAno
+                ano = listaVeiculos.get(position).ano
+
                 // efetuar uma nova requisição passando o id da marca para obter os modelos de veiculo
-                obterModelos()
+                if (tipoRequisicao == "MODELO") {
+                    obterModelos()
+                    tipoRequisicao = "ANO"
+                } else if (tipoRequisicao == "ANO"){
+                    obterAnos()
+                    tipoRequisicao = "PRECO"
+                } else if (tipoRequisicao == "PRECO"){
+                    obterPreco()
+                }
             }
         })
     }
@@ -75,10 +111,10 @@ class VeiculoAdapter (contexto:Context) : RecyclerView.Adapter<VeiculoHolder>(){
                 Log.i("RESULTADO", response.toString())
                 // [{"name": "AUDI", "fipe_name": "Audi", "order": 2, "key": "audi-6", "id": 6}, ...]
                 for (i in 0 until response.length()) {
-                val obj = response.getJSONObject(i)
-                listaVeiculos.add(Veiculo(obj.getString("id"),
-                    obj.getString("name"),
-                    "-", "-", "-", "-", ""))
+                    val obj = response.getJSONObject(i)
+                    listaVeiculos.add(Veiculo(obj.getString("id"),
+                        obj.getString("name"),
+                        "-", "-", "-", "-", ""))
                 }
                 // avisa que a lista de veiculos foi atualizada e portando o RecyclerView deve ser redesenhado
                 notifyDataSetChanged()
@@ -88,5 +124,76 @@ class VeiculoAdapter (contexto:Context) : RecyclerView.Adapter<VeiculoHolder>(){
         // coloca a requisiçao na fila para processamento pelo Volley
         filaRequisicao.add(req)
 
+    }
+
+    // obtem os modelos de veículo de acordo com a marca
+    fun obterModelos() {
+
+        var req = JsonArrayRequest(Request.Method.GET, URL_MODELO + idMarca + ".json", null,
+            Response.Listener<JSONArray> { response ->
+
+                Log.i("RESULTADO", response.toString())
+                // [{"fipe_marca": "Fiat", "name": "147 C/ CL", "marca": "FIAT", "key": "147-437", "id": "437", "fipe_name": "147 C/ CL"}...
+                // limpa a lista de veiculos antes de atualizar
+                listaVeiculos.clear()
+                for (i in 0 until response.length()) {
+                    val obj = response.getJSONObject(i)
+                    listaVeiculos.add(Veiculo(idMarca,
+                        obj.getString("marca"),
+                        obj.getString("id"), obj.getString("name"), "-", "-", ""))
+                }
+                // avisa que a lista de veiculos foi atualizada e portando o RecyclerView deve ser redesenhado
+                notifyDataSetChanged()
+            },
+            Response.ErrorListener { error -> Log.e("CARRO", "ERRO: " + error.message) })
+
+        // coloca a requisiçao na fila para processamento pelo Volley
+        filaRequisicao.add(req)
+
+    }
+
+    // obter o ano do modelo do veiculo dentro da marca
+    fun obterAnos() {
+
+        var req = JsonArrayRequest(Request.Method.GET, URL_ANO + idMarca + "/" + idModelo + ".json", null,
+            Response.Listener<JSONArray> { response ->
+
+                Log.i("RESULTADO", response.toString())
+                // [{"fipe_codigo": "32000-1", "name": "Zero KM Gasolina", "key": "32000-1", "veiculo": "Palio 1.0 ECONOMY Fire Flex 8V 4p", "id": "32000-1"},...
+                // limpa a lista de veiculos antes de atualizar
+                listaVeiculos.clear()
+                for (i in 0 until response.length()) {
+                    val obj = response.getJSONObject(i)
+                    listaVeiculos.add(Veiculo(idMarca,
+                        marca,
+                        idModelo,
+                        modelo,
+                        obj.getString("fipe_codigo"), obj.getString("name"), ""))
+                }
+                // avisa que a lista de veiculos foi atualizada e portando o RecyclerView deve ser redesenhado
+                notifyDataSetChanged()
+            },
+            Response.ErrorListener { error -> Log.e("CARRO", "ERRO: " + error.message) })
+
+        // coloca a requisiçao na fila para processamento pelo Volley
+        filaRequisicao.add(req)
+
+    }
+
+    // obter o preco do veiculo
+    fun obterPreco() {
+
+        var req = JsonObjectRequest(Request.Method.GET, URL_PRECO + idMarca + "/" + idModelo + "/" + idAno + ".json", null,
+            Response.Listener<JSONObject> { response ->
+
+                Log.i("RESULTADO", response.toString())
+                Log.i("PRECO", response.getString("preco"))
+                (contexto as PrincipalActivity).exibirResumo(marca, modelo, ano, response.getString("preco"))
+
+            },
+            Response.ErrorListener { error -> Log.e("CARRO", "ERRO: " + error.message) })
+
+        // coloca a requisiçao na fila para processamento pelo Volley
+        filaRequisicao.add(req)
     }
 }
